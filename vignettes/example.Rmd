@@ -1,0 +1,165 @@
+---
+title: "Example: Analyzing Accumulated Local Effects (ALE)"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+This vignette demonstrates how to compute and visualize Accumulated Local Effects (ALE) using the ALE package. ALE plots help to interpret the effects of predictors in a model, showing how features influence the prediction on average, locally across their range.
+
+## Setup
+
+Load necessary libraries and prepare the environment:
+
+```{r setup}
+library(ALE)
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(ggpubr)
+library(nnet)  # for neural network modeling
+library(ALEPlot)  # alternative ALE plotting
+
+# Create synthetic data for demonstration
+set.seed(42)
+n <- 5000
+x1 <- runif(n, min = 0, max = 1)
+x2 <- runif(n, min = 0, max = 1)
+x3 <- runif(n, min = 0, max = 1)
+x4 <- runif(n, min = 0, max = 1)
+y <- 4*x1 + 3.87*x2^2 + 2.97*exp(-5 + 10*x3) / (1 + exp(-5 + 10*x3)) + 
+     13.86*(x1 - 0.5)*(x2 - 0.5) + rnorm(n, 0, 1)
+DAT <- data.frame(y, x1, x2, x3, x4)
+
+# Build a neural network model
+nnet.DAT <- nnet(y ~ ., data = DAT, linout = TRUE, skip = FALSE, size = 8,
+                 decay = 0.1, maxit = 1000, trace = FALSE)
+```
+
+## Predictive Function
+
+```{r}
+# Define a predictive function for the neural network model
+yhat <- function(X.model, newdata) as.numeric(predict(X.model, newdata, type = "raw"))
+```
+
+## Compute ALE for Each Predictor
+
+```{r}
+# Compute ALE using custom function for each predictor
+ale_custom_x1 <- compute_ale(nnet.DAT, DAT, "x1", grid_size = 100)
+ale_custom_x2 <- compute_ale(nnet.DAT, DAT, "x2", grid_size = 100)
+ale_custom_x3 <- compute_ale(nnet.DAT, DAT, "x3", grid_size = 100)
+ale_custom_x4 <- compute_ale(nnet.DAT, DAT, "x4", grid_size = 100)
+```
+
+## Plot ALE Results
+
+Generate plots for each feature's ALE:
+
+```{r plot-ale}
+plot_custom_x1 <- plot_ale(ale_custom_x1, "x1", "Custom")
+plot_custom_x2 <- plot_ale(ale_custom_x2, "x2", "Custom")
+plot_custom_x3 <- plot_ale(ale_custom_x3, "x3", "Custom")
+plot_custom_x4 <- plot_ale(ale_custom_x4, "x4", "Custom")
+
+# Use ALEPlot package for comparison
+ALE_1 <- ALEPlot(DAT[, 2:5], nnet.DAT, pred.fun = yhat, J = 1, K = 500, NA.plot = TRUE)
+ALE_2 <- ALEPlot(DAT[, 2:5], nnet.DAT, pred.fun = yhat, J = 2, K = 500, NA.plot = TRUE)
+ALE_3 <- ALEPlot(DAT[, 2:5], nnet.DAT, pred.fun = yhat, J = 3, K = 500, NA.plot = TRUE)
+ALE_4 <- ALEPlot(DAT[, 2:5], nnet.DAT, pred.fun = yhat, J = 4, K = 500, NA.plot = TRUE)
+```
+
+## Comparative Visualization
+
+Arrange the custom and ALEPlot results side by side for comparison:
+
+```{r arrange-plots}
+# Convert ALEPlot results to data frames for consistency in plotting
+convert_ale_to_df <- function(ALE, feature) {
+  data.frame(feature = ALE$x.values, ALE = ALE$f.values)
+}
+aleplot_x1 <- convert_ale_to_df(ALE_1, "x1")
+aleplot_x2 <- convert_ale_to_df(ALE_2, "x2")
+aleplot_x3 <- convert_ale_to_df(ALE_3, "x3")
+aleplot_x4 <- convert_ale_to_df(ALE_4, "x4")
+
+# Plot ALE results from ALEPlot package
+plot_aleplot_x1 <- plot_ale(aleplot_x1, "x1", "ALEPlot")
+plot_aleplot_x2 <- plot_ale(aleplot_x2, "x2", "ALEPlot")
+plot_aleplot_x3 <- plot_ale(aleplot_x3, "x3", "ALEPlot")
+plot_aleplot_x4 <- plot_ale(aleplot_x4, "x4", "ALEPlot")
+
+# Combine plots for each predictor
+combined_plot_x1 <- ggarrange(plot_custom_x1 + ggtitle("Custom ALE for x1"), plot_aleplot_x1 + ggtitle("ALEPlot for x1"), ncol = 2)
+combined_plot_x2 <- ggarrange(plot_custom_x2 + ggtitle("Custom ALE for x2"), plot_aleplot_x2 + ggtitle("ALEPlot for x2"), ncol = 2)
+combined_plot_x3 <- ggarrange(plot_custom_x3 + ggtitle("Custom ALE for x3"), plot_aleplot_x3 + ggtitle("ALEPlot for x3"), ncol = 2)
+combined_plot_x4 <- ggarrange(plot_custom_x4 + ggtitle("Custom ALE for x4"), plot_aleplot_x4 + ggtitle("ALEPlot for x4"), ncol = 2)
+
+# Display combined plots
+grid.arrange(combined_plot_x1, combined_plot_x2, combined_plot_x3, combined_plot_x4, nrow = 4)
+```
+## All in one plot
+
+Fist we extract and prepare the data for plotting: 
+```{r}
+aleplot_x1 <- convert_ale_to_df(ALE_1, "x1")
+aleplot_x2 <- convert_ale_to_df(ALE_2, "x2")
+aleplot_x3 <- convert_ale_to_df(ALE_3, "x3")
+aleplot_x4 <- convert_ale_to_df(ALE_4, "x4")
+
+ale_custom_x1$Method <- "Custom"
+ale_custom_x2$Method <- "Custom"
+ale_custom_x3$Method <- "Custom"
+ale_custom_x4$Method <- "Custom"
+
+aleplot_x1$Method <- "ALEPlot"
+aleplot_x2$Method <- "ALEPlot"
+aleplot_x3$Method <- "ALEPlot"
+aleplot_x4$Method <- "ALEPlot"
+
+# combine the data
+combined_x1 <- rbind(ale_custom_x1, aleplot_x1)
+combined_x2 <- rbind(ale_custom_x2, aleplot_x2)
+combined_x3 <- rbind(ale_custom_x3, aleplot_x3)
+combined_x4 <- rbind(ale_custom_x4, aleplot_x4)
+
+
+```
+
+Then we can plot: 
+```{r}
+library(ggplot2)
+library(gridExtra) 
+
+# function to plot ALE for each feature
+plot_ale_comparison <- function(data, feature_name) {
+  ggplot(data, aes(x = feature, y = ALE, color = Method)) +
+    geom_line() +
+    labs(title = paste("ALE Comparison for", feature_name),
+         x = feature_name, y = "Accumulated Local Effect (ALE)") +
+    theme_minimal() +
+    scale_color_manual(values = c("Custom" = "blue", "ALEPlot" = "red")) +
+    theme(legend.position = "bottom")
+}
+
+# create plots for each feature
+plot_x1 <- plot_ale_comparison(combined_x1, "x1")
+plot_x2 <- plot_ale_comparison(combined_x2, "x2")
+plot_x3 <- plot_ale_comparison(combined_x3, "x3")
+plot_x4 <- plot_ale_comparison(combined_x4, "x4")
+
+# arrange the plots in a grid
+grid.arrange(plot_x1, plot_x2, plot_x3, plot_x4, ncol = 2)
+```

@@ -1,0 +1,23 @@
+Package: ALE
+Type: Package
+Title: Accumulated Local Effects for Interpretable Machine Learning
+Version: 0.1.0
+Author: Imad El Badisy
+Maintainer: Imad El Badisy <imad.elbadisy@somewhere.net>
+Description: This package provides tools to compute and plot Accumulated Local Effects (ALE),
+    which are useful for interpreting the impact of predictors in black-box machine learning models.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports:
+    ggplot2
+Suggests:
+  knitr,
+  rmarkdown,
+  dplyr,
+  ggpubr,
+  gridExtra,
+  nnet,
+  ALEPlot
+VignetteBuilder: knitr
+RoxygenNote: 7.3.2
