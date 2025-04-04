@@ -10,9 +10,9 @@ providing interpretability for machine learning models.
 `ALE` package is not yet on the CRAN, so you can install it directly
 from github:
 
-``` r
+```{r}
 #install.packages("devtools")
-devtools::install_local("ielbadisy/ALE")
+devtools::install_github("ielbadisy/ALE")
 ```
 
     ## Warning in normalizePath(path): path[1]="ielbadisy/ALE": No such file or
@@ -24,7 +24,7 @@ devtools::install_local("ielbadisy/ALE")
 
 ### Loading the Package
 
-``` r
+```{r}
 library(ALE)
 ```
 
@@ -33,7 +33,7 @@ library(ALE)
 Use the `compute_ale()` function to calculate ALE for a feature in your
 model. Here’s a quick example:
 
-``` r
+```{r}
 library(ALE)
 
 # Simulate some data
@@ -68,7 +68,7 @@ ale_x1
 
 Use the `plot_ale()` function to visualize the ALE values for a feature:
 
-``` r
+```{r}
 # Plot ALE for x1
 plot_ale(ale_x1, feature_name = "x1", title_suffix = "Custom Model")
 ```
@@ -80,7 +80,7 @@ plot_ale(ale_x1, feature_name = "x1", title_suffix = "Custom Model")
 If you wish to compare ALE values computed with this package to those
 from the `ALEPlot` package, you can do so with the following steps:
 
-``` r
+```{r}
 # define a custom prediction function with the expected argument names
 yhat <- function(X.model, newdata) {
     predict(X.model, newdata = newdata)
@@ -97,18 +97,11 @@ ALEPlot_data <- ALEPlot::ALEPlot(data[, c("x1", "x2")], model, pred.fun = yhat, 
 Full documentation for `ALE` functions, including additional examples
 and parameters, can be found in the package help files:
 
-``` r
+```{r}
 ?compute_ale
 ?plot_ale
 ```
 
-Or view the package vignette:
-
-``` r
-vignette("example", package = "ALE")
-```
-
-    ## Warning: vignette 'example' not found
 
 ## Contributing
 
